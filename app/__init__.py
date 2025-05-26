@@ -1,8 +1,11 @@
 from flask import Flask
+from flask_cors import CORS # Added
 import os
 
 def create_app():
     app = Flask(__name__)
+    CORS(app) # Added - Initialize CORS with default settings (allow all origins)
+    
     app.config.from_object('config.Config') 
 
     project_root = os.path.dirname(app.root_path) 
