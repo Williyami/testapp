@@ -1,4 +1,4 @@
-print("DEBUG: LOADING app/routes.py - DEBUG VERSION FOR SIGNUP ROUTING CHECK") # Updated
+print("DEBUG: LOADING app/routes.py - DEBUG VERSION FOR SIGNUP ROUTING CHECK") 
 from flask import Blueprint, request, jsonify, current_app 
 from .models import User, Employee, SESSIONS_DB, Expense, EXPENSES_DB
 from werkzeug.utils import secure_filename
@@ -12,9 +12,7 @@ from .storage_services import upload_file_to_cloud, delete_file_from_cloud, SIMU
 bp = Blueprint('main', __name__)
 
 # --- Temporary Debug Routes ---
-@bp.route('/signup', methods=['GET']) 
-def signup_get_debug():
-    return jsonify({"message": "GET /signup is reachable (debug)"}), 200 # Updated message
+# Existing /signup route(s) will be removed and replaced by combined_signup_route below
 
 @bp.route('/show-routes-debug')
 def show_routes_debug():
@@ -33,10 +31,52 @@ def show_routes_debug():
     
     html_output = "<html><head><title>Registered Routes</title></head><body>"
     html_output += "<h1>Registered Routes</h1><pre>"
-    html_output += "\n".join(output) # Ensured this matches the prompt's target
+    html_output += "\n".join(output) 
     html_output += "</pre></body></html>"
     return html_output
 # --- End Temporary Debug Routes ---
+
+# --- New Combined Signup Route ---
+# This new combined function should be the ONLY @bp.route('/signup',...)
+# in app/routes.py after this operation.
+
+@bp.route('/signup', methods=['GET', 'POST'])
+def combined_signup_route(): # Renamed function slightly to ensure it's "new"
+    if request.method == 'POST':
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid JSON payload"}), 400
+
+        username = data.get('username')
+        password = data.get('password')
+
+        if not username or not password:
+            return jsonify({"error": "Username and password are required"}), 400
+
+        if User.get_by_username(username): # Assuming User is imported
+            return jsonify({"error": "Username already exists"}), 409
+
+        if len(password) < 8:
+            return jsonify({"error": "Password must be at least 8 characters long"}), 400
+
+        try:
+            # Assuming Employee is imported
+            new_user = Employee(username=username, password=password)
+            new_user.save()
+        except Exception as e:
+            current_app.logger.error(f"Error during user creation: {e}") # Assuming current_app
+            return jsonify({"error": "An unexpected error occurred during account creation."}), 500
+        
+        return jsonify({"message": "Account created successfully. Please login."}), 201
+    
+    elif request.method == 'GET':
+        # This is the debug GET response
+        return jsonify({"message": "GET /signup is reachable (debug - combined route v2)"}), 200
+    
+    # Fallback for any other methods (though Flask usually handles this with a 405)
+    return jsonify({"error": "Method not explicitly handled"}), 405
+# --- End New Combined Signup Route ---
+
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 
@@ -217,30 +257,4 @@ def get_expenses():
         } for exp in user_expenses
     ]), 200
 
-
-@bp.route('/signup', methods=['POST'])
-def signup():
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "Invalid JSON payload"}), 400
-
-    username = data.get('username')
-    password = data.get('password')
-
-    if not username or not password:
-        return jsonify({"error": "Username and password are required"}), 400
-
-    if User.get_by_username(username):
-        return jsonify({"error": "Username already exists"}), 409
-
-    if len(password) < 8:
-        return jsonify({"error": "Password must be at least 8 characters long"}), 400
-
-    try:
-        new_user = Employee(username=username, password=password)
-        new_user.save()
-    except Exception as e:
-        current_app.logger.error(f"Error during user creation: {e}")
-        return jsonify({"error": "An unexpected error occurred during account creation."}), 500
-        
-    return jsonify({"message": "Account created successfully. Please login."}), 201
+# Removed old POST-only signup function. The combined_signup_route handles this now.
