@@ -1,0 +1,128 @@
+<html>
+  <head>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
+    <link
+      rel="stylesheet"
+      as="style"
+      onload="this.rel='stylesheet'"
+      href="https://fonts.googleapis.com/css2?display=swap&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900&amp;family=Public+Sans%3Awght%40400%3B500%3B700%3B900"
+    />
+
+    <title>Stitch Design</title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  </head>
+  <body>
+    <div
+      class="relative flex size-full min-h-screen flex-col bg-white justify-between group/design-root overflow-x-hidden"
+      style='font-family: "Public Sans", "Noto Sans", sans-serif;'
+    >
+      <div>
+        <div class="flex items-center bg-white p-4 pb-2 justify-between">
+          <div class="text-[#121317] flex size-12 shrink-0 items-center" data-icon="ArrowLeft" data-size="24px" data-weight="regular">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+              <path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path>
+            </svg>
+          </div>
+          <h2 class="text-[#121317] text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Expense Review</h2>
+        </div>
+        <h2 class="text-[#121317] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Submission Details</h2>
+        <div class="p-4 grid grid-cols-2">
+          <div class="flex flex-col gap-1 border-t border-solid border-t-[#dddee4] py-4 pr-2">
+            <p class="text-[#686e82] text-sm font-normal leading-normal">Employee</p>
+            <p class="text-[#121317] text-sm font-normal leading-normal">Ethan Harper</p>
+          </div>
+          <div class="flex flex-col gap-1 border-t border-solid border-t-[#dddee4] py-4 pl-2">
+            <p class="text-[#686e82] text-sm font-normal leading-normal">Department</p>
+            <p class="text-[#121317] text-sm font-normal leading-normal">Marketing</p>
+          </div>
+          <div class="flex flex-col gap-1 border-t border-solid border-t-[#dddee4] py-4 pr-2">
+            <p class="text-[#686e82] text-sm font-normal leading-normal">Submission Date</p>
+            <p class="text-[#121317] text-sm font-normal leading-normal">2024-07-26</p>
+          </div>
+          <div class="flex flex-col gap-1 border-t border-solid border-t-[#dddee4] py-4 pl-2">
+            <p class="text-[#686e82] text-sm font-normal leading-normal">Total Amount</p>
+            <p class="text-[#121317] text-sm font-normal leading-normal">$125.50</p>
+          </div>
+          <div class="flex flex-col gap-1 border-t border-solid border-t-[#dddee4] py-4 pr-2">
+            <p class="text-[#686e82] text-sm font-normal leading-normal">Status</p>
+            <p class="text-[#121317] text-sm font-normal leading-normal">Pending</p>
+          </div>
+          <div class="flex flex-col gap-1 border-t border-solid border-t-[#dddee4] py-4 pl-2">
+            <p class="text-[#686e82] text-sm font-normal leading-normal">Policy Compliance</p>
+            <p class="text-[#121317] text-sm font-normal leading-normal">Compliant</p>
+          </div>
+        </div>
+        <h2 class="text-[#121317] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Receipt</h2>
+        <div class="flex w-full grow bg-white @container p-4">
+          <div class="w-full gap-1 overflow-hidden bg-white @[480px]:gap-2 aspect-[3/2] rounded-xl flex">
+            <div
+              class="w-full bg-center bg-no-repeat bg-cover aspect-auto rounded-none flex-1"
+              style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAxmdfvsm2hckMt0d6yBe7lQcUGcgONrDiIADyKJngSfWogGILegn8dv1RqxDlLcdsLCMotZ3C5gCo6ATIoQdr9hQ2rFueFGGsd2sxF1Y5NgrTYl3MvsQQJZ6E8ZwRPfvpHcC9aqxcU_xX-29BiZwfhHJfwyHbUEy11bR3Zd7o-1junA_3NlaD2KuLacPzYxu7WgCV1E_-_M5LvgcaxDWTdJIyJ8X25_qzgFnk4yPGtrJ6VusMG_HeHaisGM35CkhfdgTa5rulz56I6");'
+            ></div>
+          </div>
+        </div>
+        <h2 class="text-[#121317] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Expense Items</h2>
+        <div class="flex items-center gap-4 bg-white px-4 min-h-[72px] py-2 justify-between">
+          <div class="flex flex-col justify-center">
+            <p class="text-[#121317] text-base font-medium leading-normal line-clamp-1">Restaurant</p>
+            <p class="text-[#686e82] text-sm font-normal leading-normal line-clamp-2">Lunch with client</p>
+          </div>
+          <div class="shrink-0"><p class="text-[#121317] text-base font-normal leading-normal">$125.50</p></div>
+        </div>
+        <h2 class="text-[#121317] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Audit Trail</h2>
+        <div class="grid grid-cols-[40px_1fr] gap-x-2 px-4">
+          <div class="flex flex-col items-center gap-1 pt-3">
+            <div class="text-[#121317]" data-icon="PaperPlaneTilt" data-size="24px" data-weight="regular">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+                <path
+                  d="M227.32,28.68a16,16,0,0,0-15.66-4.08l-.15,0L19.57,82.84a16,16,0,0,0-2.42,29.84l85.62,40.55,40.55,85.62A15.86,15.86,0,0,0,157.74,248q.69,0,1.38-.06a15.88,15.88,0,0,0,14-11.51l58.2-191.94c0-.05,0-.1,0-.15A16,16,0,0,0,227.32,28.68ZM157.83,231.85l-.05.14L118.42,148.9l47.24-47.25a8,8,0,0,0-11.31-11.31L107.1,137.58,24,98.22l.14,0L216,40Z"
+                ></path>
+              </svg>
+            </div>
+            <div class="w-[1.5px] bg-[#dddee4] h-2 grow"></div>
+          </div>
+          <div class="flex flex-1 flex-col py-3">
+            <p class="text-[#121317] text-base font-medium leading-normal">Submitted</p>
+            <p class="text-[#686e82] text-base font-normal leading-normal">2024-07-26 10:00 AM</p>
+          </div>
+          <div class="flex flex-col items-center gap-1 pb-3">
+            <div class="w-[1.5px] bg-[#dddee4] h-2"></div>
+            <div class="text-[#121317]" data-icon="MagnifyingGlass" data-size="24px" data-weight="regular">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+                <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"></path>
+              </svg>
+            </div>
+          </div>
+          <div class="flex flex-1 flex-col py-3">
+            <p class="text-[#121317] text-base font-medium leading-normal">Under Review</p>
+            <p class="text-[#686e82] text-base font-normal leading-normal">2024-07-26 10:15 AM</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-stretch">
+          <div class="flex flex-1 gap-3 flex-wrap px-4 py-3 justify-between">
+            <button
+              class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#afbae8] text-[#121317] text-sm font-bold leading-normal tracking-[0.015em]"
+            >
+              <span class="truncate">Approve</span>
+            </button>
+            <button
+              class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#f1f1f4] text-[#121317] text-sm font-bold leading-normal tracking-[0.015em]"
+            >
+              <span class="truncate">Reject</span>
+            </button>
+            <button
+              class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#f1f1f4] text-[#121317] text-sm font-bold leading-normal tracking-[0.015em]"
+            >
+              <span class="truncate">Request Info</span>
+            </button>
+          </div>
+        </div>
+        <div class="h-5 bg-white"></div>
+      </div>
+    </div>
+  </body>
+</html>
