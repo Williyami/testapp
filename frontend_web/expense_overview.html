@@ -23,6 +23,7 @@
           <h2 class="text-[#121317] text-lg font-bold leading-tight tracking-[-0.015em] flex-1">Expenses</h2>
           <div class="flex w-12 items-center justify-end">
             <button
+              id="addExpenseButton"
               class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 bg-transparent text-[#121317] gap-2 text-base font-bold leading-normal tracking-[-0.015em] min-w-0 p-0"
             >
               <div class="text-[#121317]" data-icon="Plus" data-size="24px" data-weight="regular">
@@ -34,66 +35,17 @@
           </div>
         </div>
         <h2 class="text-[#121317] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Recent Submissions</h2>
-        <div class="flex items-center gap-4 bg-white px-4 min-h-[72px] py-2 justify-between">
-          <div class="flex items-center gap-4">
-            <div class="text-[#121317] flex items-center justify-center rounded-lg bg-[#f1f1f4] shrink-0 size-12" data-icon="Receipt" data-size="24px" data-weight="regular">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
-                <path
-                  d="M72,104a8,8,0,0,1,8-8h96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,104Zm8,40h96a8,8,0,0,0,0-16H80a8,8,0,0,0,0,16ZM232,56V208a8,8,0,0,1-11.58,7.15L192,200.94l-28.42,14.21a8,8,0,0,1-7.16,0L128,200.94,99.58,215.15a8,8,0,0,1-7.16,0L64,200.94,35.58,215.15A8,8,0,0,1,24,208V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56Zm-16,0H40V195.06l20.42-10.22a8,8,0,0,1,7.16,0L96,199.06l28.42-14.22a8,8,0,0,1,7.16,0L160,199.06l28.42-14.22a8,8,0,0,1,7.16,0L216,195.06Z"
-                ></path>
-              </svg>
-            </div>
-            <div class="flex flex-col justify-center">
-              <p class="text-[#121317] text-base font-medium leading-normal line-clamp-1">Business Lunch</p>
-              <p class="text-[#686e82] text-sm font-normal leading-normal line-clamp-2">$120.00</p>
-            </div>
-          </div>
-          <div class="shrink-0">
-            <div class="flex size-7 items-center justify-center"><div class="size-3 rounded-full bg-[#07883d]"></div></div>
-          </div>
+        <div id="recentSubmissionsContainer">
+          <!-- Static recent submissions removed, JS will populate this -->
         </div>
-        <div class="flex items-center gap-4 bg-white px-4 min-h-[72px] py-2 justify-between">
-          <div class="flex items-center gap-4">
-            <div class="text-[#121317] flex items-center justify-center rounded-lg bg-[#f1f1f4] shrink-0 size-12" data-icon="Receipt" data-size="24px" data-weight="regular">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
-                <path
-                  d="M72,104a8,8,0,0,1,8-8h96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,104Zm8,40h96a8,8,0,0,0,0-16H80a8,8,0,0,0,0,16ZM232,56V208a8,8,0,0,1-11.58,7.15L192,200.94l-28.42,14.21a8,8,0,0,1-7.16,0L128,200.94,99.58,215.15a8,8,0,0,1-7.16,0L64,200.94,35.58,215.15A8,8,0,0,1,24,208V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56Zm-16,0H40V195.06l20.42-10.22a8,8,0,0,1,7.16,0L96,199.06l28.42-14.22a8,8,0,0,1,7.16,0L160,199.06l28.42-14.22a8,8,0,0,1,7.16,0L216,195.06Z"
-                ></path>
-              </svg>
-            </div>
-            <div class="flex flex-col justify-center">
-              <p class="text-[#121317] text-base font-medium leading-normal line-clamp-1">Client Dinner</p>
-              <p class="text-[#686e82] text-sm font-normal leading-normal line-clamp-2">$85.50</p>
-            </div>
-          </div>
-          <div class="shrink-0">
-            <div class="flex size-7 items-center justify-center"><div class="size-3 rounded-full bg-[#07883d]"></div></div>
-          </div>
-        </div>
-        <div class="flex items-center gap-4 bg-white px-4 min-h-[72px] py-2 justify-between">
-          <div class="flex items-center gap-4">
-            <div class="text-[#121317] flex items-center justify-center rounded-lg bg-[#f1f1f4] shrink-0 size-12" data-icon="Receipt" data-size="24px" data-weight="regular">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
-                <path
-                  d="M72,104a8,8,0,0,1,8-8h96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,104Zm8,40h96a8,8,0,0,0,0-16H80a8,8,0,0,0,0,16ZM232,56V208a8,8,0,0,1-11.58,7.15L192,200.94l-28.42,14.21a8,8,0,0,1-7.16,0L128,200.94,99.58,215.15a8,8,0,0,1-7.16,0L64,200.94,35.58,215.15A8,8,0,0,1,24,208V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56Zm-16,0H40V195.06l20.42-10.22a8,8,0,0,1,7.16,0L96,199.06l28.42-14.22a8,8,0,0,1,7.16,0L160,199.06l28.42-14.22a8,8,0,0,1,7.16,0L216,195.06Z"
-                ></path>
-              </svg>
-            </div>
-            <div class="flex flex-col justify-center">
-              <p class="text-[#121317] text-base font-medium leading-normal line-clamp-1">Office Supplies</p>
-              <p class="text-[#686e82] text-sm font-normal leading-normal line-clamp-2">$45.75</p>
-            </div>
-          </div>
-          <div class="shrink-0">
-            <div class="flex size-7 items-center justify-center"><div class="size-3 rounded-full bg-[#07883d]"></div></div>
-          </div>
-        </div>
+        
         <h2 class="text-[#121317] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Past Expenses</h2>
         <div class="px-4 py-3">
           <label class="flex flex-col min-w-40 h-12 w-full">
             <div class="flex w-full flex-1 items-stretch rounded-xl h-full">
               <div
-                class="text-[#686e82] flex border-none bg-[#f1f1f4] items-center justify-center pl-4 rounded-l-xl border-r-0"
+                id="searchExpensesButton" 
+                class="text-[#686e82] flex border-none bg-[#f1f1f4] items-center justify-center pl-4 rounded-l-xl border-r-0 cursor-pointer"
                 data-icon="MagnifyingGlass"
                 data-size="24px"
                 data-weight="regular"
@@ -103,6 +55,7 @@
                 </svg>
               </div>
               <input
+                id="searchExpensesInput"
                 placeholder="Search expenses"
                 class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#121317] focus:outline-0 focus:ring-0 border-none bg-[#f1f1f4] focus:border-none h-full placeholder:text-[#686e82] px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal"
                 value=""
@@ -111,7 +64,7 @@
           </label>
         </div>
         <div class="flex gap-3 p-3 flex-wrap pr-4">
-          <button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full bg-[#f1f1f4] pl-4 pr-2">
+          <button id="categoryFilterButton" class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full bg-[#f1f1f4] pl-4 pr-2">
             <p class="text-[#121317] text-sm font-medium leading-normal">Category</p>
             <div class="text-[#121317]" data-icon="CaretDown" data-size="20px" data-weight="regular">
               <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
@@ -119,7 +72,7 @@
               </svg>
             </div>
           </button>
-          <button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full bg-[#f1f1f4] pl-4 pr-2">
+          <button id="dateFilterButton" class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full bg-[#f1f1f4] pl-4 pr-2">
             <p class="text-[#121317] text-sm font-medium leading-normal">Date</p>
             <div class="text-[#121317]" data-icon="CaretDown" data-size="20px" data-weight="regular">
               <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
@@ -127,7 +80,7 @@
               </svg>
             </div>
           </button>
-          <button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full bg-[#f1f1f4] pl-4 pr-2">
+          <button id="statusFilterButton" class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full bg-[#f1f1f4] pl-4 pr-2">
             <p class="text-[#121317] text-sm font-medium leading-normal">Status</p>
             <div class="text-[#121317]" data-icon="CaretDown" data-size="20px" data-weight="regular">
               <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
@@ -136,59 +89,15 @@
             </div>
           </button>
         </div>
-        <div class="flex items-center gap-4 bg-white px-4 min-h-[72px] py-2 justify-between">
-          <div class="flex items-center gap-4">
-            <div class="text-[#121317] flex items-center justify-center rounded-lg bg-[#f1f1f4] shrink-0 size-12" data-icon="Receipt" data-size="24px" data-weight="regular">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
-                <path
-                  d="M72,104a8,8,0,0,1,8-8h96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,104Zm8,40h96a8,8,0,0,0,0-16H80a8,8,0,0,0,0,16ZM232,56V208a8,8,0,0,1-11.58,7.15L192,200.94l-28.42,14.21a8,8,0,0,1-7.16,0L128,200.94,99.58,215.15a8,8,0,0,1-7.16,0L64,200.94,35.58,215.15A8,8,0,0,1,24,208V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56Zm-16,0H40V195.06l20.42-10.22a8,8,0,0,1,7.16,0L96,199.06l28.42-14.22a8,8,0,0,1,7.16,0L160,199.06l28.42-14.22a8,8,0,0,1,7.16,0L216,195.06Z"
-                ></path>
-              </svg>
-            </div>
-            <div class="flex flex-col justify-center">
-              <p class="text-[#121317] text-base font-medium leading-normal line-clamp-1">Conference Tickets</p>
-              <p class="text-[#686e82] text-sm font-normal leading-normal line-clamp-2">$250.00</p>
-            </div>
-          </div>
-          <div class="shrink-0"><p class="text-[#121317] text-base font-normal leading-normal">Approved</p></div>
-        </div>
-        <div class="flex items-center gap-4 bg-white px-4 min-h-[72px] py-2 justify-between">
-          <div class="flex items-center gap-4">
-            <div class="text-[#121317] flex items-center justify-center rounded-lg bg-[#f1f1f4] shrink-0 size-12" data-icon="Receipt" data-size="24px" data-weight="regular">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
-                <path
-                  d="M72,104a8,8,0,0,1,8-8h96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,104Zm8,40h96a8,8,0,0,0,0-16H80a8,8,0,0,0,0,16ZM232,56V208a8,8,0,0,1-11.58,7.15L192,200.94l-28.42,14.21a8,8,0,0,1-7.16,0L128,200.94,99.58,215.15a8,8,0,0,1-7.16,0L64,200.94,35.58,215.15A8,8,0,0,1,24,208V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56Zm-16,0H40V195.06l20.42-10.22a8,8,0,0,1,7.16,0L96,199.06l28.42-14.22a8,8,0,0,1,7.16,0L160,199.06l28.42-14.22a8,8,0,0,1,7.16,0L216,195.06Z"
-                ></path>
-              </svg>
-            </div>
-            <div class="flex flex-col justify-center">
-              <p class="text-[#121317] text-base font-medium leading-normal line-clamp-1">Travel Expenses</p>
-              <p class="text-[#686e82] text-sm font-normal leading-normal line-clamp-2">$150.00</p>
-            </div>
-          </div>
-          <div class="shrink-0"><p class="text-[#121317] text-base font-normal leading-normal">Approved</p></div>
-        </div>
-        <div class="flex items-center gap-4 bg-white px-4 min-h-[72px] py-2 justify-between">
-          <div class="flex items-center gap-4">
-            <div class="text-[#121317] flex items-center justify-center rounded-lg bg-[#f1f1f4] shrink-0 size-12" data-icon="Receipt" data-size="24px" data-weight="regular">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
-                <path
-                  d="M72,104a8,8,0,0,1,8-8h96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,104Zm8,40h96a8,8,0,0,0,0-16H80a8,8,0,0,0,0,16ZM232,56V208a8,8,0,0,1-11.58,7.15L192,200.94l-28.42,14.21a8,8,0,0,1-7.16,0L128,200.94,99.58,215.15a8,8,0,0,1-7.16,0L64,200.94,35.58,215.15A8,8,0,0,1,24,208V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56Zm-16,0H40V195.06l20.42-10.22a8,8,0,0,1,7.16,0L96,199.06l28.42-14.22a8,8,0,0,1,7.16,0L160,199.06l28.42-14.22a8,8,0,0,1,7.16,0L216,195.06Z"
-                ></path>
-              </svg>
-            </div>
-            <div class="flex flex-col justify-center">
-              <p class="text-[#121317] text-base font-medium leading-normal line-clamp-1">Team Building</p>
-              <p class="text-[#686e82] text-sm font-normal leading-normal line-clamp-2">$75.00</p>
-            </div>
-          </div>
-          <div class="shrink-0"><p class="text-[#121317] text-base font-normal leading-normal">Rejected</p></div>
+        <div id="pastExpensesContainer">
+          <!-- Static past expenses removed, JS will populate this -->
         </div>
       </div>
       <div>
         <div class="flex justify-end overflow-hidden px-5 pb-5">
           <button
-            class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-14 px-5 bg-[#afbae8] text-[#121317] text-base font-bold leading-normal tracking-[0.015em] min-w-0 gap-4 pl-4 pr-6"
+            id="chatWithAIButton"
+            class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-14 px-5 bg-[#afbae8] text-[#121317] text-base font-bold leading-normal tracking-[-0.015em] min-w-0 gap-4 pl-4 pr-6"
           >
             <div class="text-[#121317]" data-icon="ChatCircleDots" data-size="24px" data-weight="regular">
               <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
@@ -203,5 +112,6 @@
         <div class="h-5 bg-white"></div>
       </div>
     </div>
+    <script src="js/expense_overview.js"></script>
   </body>
 </html>
