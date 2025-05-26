@@ -1,4 +1,3 @@
-print("DEBUG: LOADING app/routes.py - DEBUG VERSION FOR SIGNUP ROUTING CHECK") 
 from flask import Blueprint, request, jsonify, current_app 
 from .models import User, Employee, SESSIONS_DB, Expense, EXPENSES_DB
 from werkzeug.utils import secure_filename
@@ -11,71 +10,37 @@ from .storage_services import upload_file_to_cloud, delete_file_from_cloud, SIMU
 # Define a Blueprint
 bp = Blueprint('main', __name__)
 
-# --- Temporary Debug Routes ---
-# Existing /signup route(s) will be removed and replaced by combined_signup_route below
+# Debug print statement removed.
+# Debug routes /show-routes-debug and GET /signup removed.
 
-@bp.route('/show-routes-debug')
-def show_routes_debug():
-    import urllib.parse 
-    output = []
-    rules = sorted(current_app.url_map.iter_rules(), key=lambda rule: rule.rule)
-    for rule in rules:
-        options = {}
-        for arg in rule.arguments:
-            options[arg] = "[{0}]".format(arg)
-        
-        methods = ','.join(sorted(rule.methods))
-        url = urllib.parse.unquote(rule.rule) 
-        line = "{:50s} {:30s} {}".format(url, methods, options)
-        output.append(line)
+@bp.route('/signup', methods=['POST']) # Only POST method
+def combined_signup_route(): # Function name can be kept or changed to signup()
+    # This block now ONLY contains the logic for POST requests:
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON payload"}), 400
+
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+
+    if User.get_by_username(username): 
+        return jsonify({"error": "Username already exists"}), 409
+
+    if len(password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters long"}), 400
+
+    try:
+        new_user = Employee(username=username, password=password)
+        new_user.save()
+    except Exception as e:
+        current_app.logger.error(f"Error during user creation: {e}") 
+        return jsonify({"error": "An unexpected error occurred during account creation."}), 500
     
-    html_output = "<html><head><title>Registered Routes</title></head><body>"
-    html_output += "<h1>Registered Routes</h1><pre>"
-    html_output += "\n".join(output) 
-    html_output += "</pre></body></html>"
-    return html_output
-# --- End Temporary Debug Routes ---
-
-# --- New Combined Signup Route ---
-# This new combined function should be the ONLY @bp.route('/signup',...)
-# in app/routes.py after this operation.
-
-@bp.route('/signup', methods=['GET', 'POST'])
-def combined_signup_route(): # Renamed function slightly to ensure it's "new"
-    if request.method == 'POST':
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "Invalid JSON payload"}), 400
-
-        username = data.get('username')
-        password = data.get('password')
-
-        if not username or not password:
-            return jsonify({"error": "Username and password are required"}), 400
-
-        if User.get_by_username(username): # Assuming User is imported
-            return jsonify({"error": "Username already exists"}), 409
-
-        if len(password) < 8:
-            return jsonify({"error": "Password must be at least 8 characters long"}), 400
-
-        try:
-            # Assuming Employee is imported
-            new_user = Employee(username=username, password=password)
-            new_user.save()
-        except Exception as e:
-            current_app.logger.error(f"Error during user creation: {e}") # Assuming current_app
-            return jsonify({"error": "An unexpected error occurred during account creation."}), 500
-        
-        return jsonify({"message": "Account created successfully. Please login."}), 201
-    
-    elif request.method == 'GET':
-        # This is the debug GET response
-        return jsonify({"message": "GET /signup is reachable (debug - combined route v2)"}), 200
-    
-    # Fallback for any other methods (though Flask usually handles this with a 405)
-    return jsonify({"error": "Method not explicitly handled"}), 405
-# --- End New Combined Signup Route ---
+    return jsonify({"message": "Account created successfully. Please login."}), 201
+# --- End Signup Route ---
 
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
@@ -257,4 +222,7 @@ def get_expenses():
         } for exp in user_expenses
     ]), 200
 
-# Removed old POST-only signup function. The combined_signup_route handles this now.
+# Note: The old POST-only signup function was part of the combined_signup_route,
+# which is now correctly defined as POST-only.
+# The temporary GET handler for /signup was also part of combined_signup_route and is now removed.
+# The /show-routes-debug function was also removed.

@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const API_BASE_URL = 'http://127.0.0.1:5000'; // Added this line
+
     const signupForm = document.getElementById('signupForm');
     const signupButton = document.getElementById('signupButton');
     const usernameInput = document.getElementById('username');
@@ -46,7 +48,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            const response = await fetch('/signup', {
+            // Note: The fetch URL will be updated in a subsequent subtask to use API_BASE_URL
+            const response = await fetch(API_BASE_URL + '/signup', { // Updated to use API_BASE_URL
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

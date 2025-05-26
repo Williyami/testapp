@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const API_BASE_URL = 'http://127.0.0.1:5000'; // Added this line
     redirectToLoginIfNoToken(); // From auth_utils.js
 
     const expenseForm = document.getElementById('expenseForm');
@@ -12,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const notesTextarea = document.getElementById('expenseNotes');
     const receiptInput = document.getElementById('receiptFile');
     const topPlusButton = document.getElementById('addExpenseTopButton');
-    const logoutButton = document.getElementById('logoutButtonExpensesPage'); // Added
+    const logoutButton = document.getElementById('logoutButtonExpensesPage'); 
 
     if (logoutButton) {
         logoutButton.addEventListener('click', function () {
@@ -74,11 +75,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const authToken = getToken(); // Use getToken() from auth_utils.js
             if (!authToken) {
                 displayMessage('Authentication token not found. Please log in.', 'error');
-                // Optionally, redirect to login: redirectToLoginIfNoToken();
                 return;
             }
 
-            const response = await fetch('/expenses', {
+            // Note: The fetch URL will be updated in a subsequent subtask to use API_BASE_URL
+            const response = await fetch(API_BASE_URL + '/expenses', { // Updated to use API_BASE_URL
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + authToken

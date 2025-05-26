@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const API_BASE_URL = 'http://127.0.0.1:5000'; // Added this line
     redirectToLoginIfNoToken(); // From auth_utils.js
 
     const recentSubmissionsContainer = document.getElementById('recentSubmissionsContainer');
@@ -68,7 +69,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            const response = await fetch('/expenses', {
+            // Note: The fetch URL will be updated in a subsequent subtask to use API_BASE_URL
+            const response = await fetch(API_BASE_URL + '/expenses', { // Updated to use API_BASE_URL
                 headers: { 'Authorization': 'Bearer ' + authToken }
             });
             if (!response.ok) {

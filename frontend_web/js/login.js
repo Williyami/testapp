@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const API_BASE_URL = 'http://127.0.0.1:5000'; // Added this line
+
     const loginForm = document.getElementById('loginForm');
     const loginButton = document.getElementById('loginButton');
     const usernameInput = document.getElementById('username');
@@ -11,8 +13,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     // Check if already logged in and redirect appropriately
-    const existingToken = getToken();
-    const existingUserRole = getUserRole();
+    const existingToken = getToken(); // Assumes getToken is from auth_utils.js, which should be loaded
+    const existingUserRole = getUserRole(); // Assumes getUserRole is from auth_utils.js
     if (existingToken && existingUserRole) {
         if (existingUserRole === 'admin') {
             window.location.href = 'admindashboard.html';
@@ -46,7 +48,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            const response = await fetch('/login', {
+            // Note: The fetch URL will be updated in a subsequent subtask to use API_BASE_URL
+            const response = await fetch(API_BASE_URL + '/login', { // Updated to use API_BASE_URL
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
