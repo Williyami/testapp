@@ -7,7 +7,7 @@ import sys # Added for path adjustment if needed, though BaseTestCase handles it
 # Assuming BaseTestCase is in a 'base.py' sibling file.
 # BaseTestCase already adds project_root to sys.path
 from tests.base import BaseTestCase 
-from app.models import USERS_DB, Admin, Employee # For direct inspection or setup if needed
+from app.models import User, USERS_DB, Employee, Admin # Ensure User is imported for get_by_username
 from app.storage_services import SIMULATED_CLOUD_FOLDER # To check paths
 
 
@@ -50,6 +50,68 @@ class TestAuthRoutes(BaseTestCase):
     def test_me_endpoint_no_token(self):
         response = self.client.get('/me')
         self.assertEqual(response.status_code, 401) # Missing token
+
+    # --- New Signup Tests ---
+    def test_signup_successful_employee(self):
+        # Ensure USERS_DB is clean for this specific username before test
+        USERS_DB.pop("newemp", None) # Remove if exists from a previous failed run
+
+        response = self.client.post('/signup', json={
+            'username': 'newemp',
+            'password': 'newpassword123'
+        })
+        self.assertEqual(response.status_code, 201, msg=response.get_json())
+        self.assertEqual(response.json['message'], 'Account created successfully. Please login.')
+        
+        created_user = User.get_by_username('newemp')
+        self.assertIsNotNone(created_user)
+        self.assertEqual(created_user.role, 'employee')
+        self.assertTrue(created_user.check_password('newpassword123'))
+
+    def test_signup_username_already_exists(self):
+        # emp1 is created in setUp
+        response = self.client.post('/signup', json={
+            'username': 'emp1', # This username already exists
+            'password': 'anotherpassword'
+        })
+        self.assertEqual(response.status_code, 409, msg=response.get_json())
+        self.assertEqual(response.json['error'], 'Username already exists')
+
+    def test_signup_password_too_short(self):
+        response = self.client.post('/signup', json={
+            'username': 'shortpassuser',
+            'password': 'short' # Less than 8 characters
+        })
+        self.assertEqual(response.status_code, 400, msg=response.get_json())
+        self.assertEqual(response.json['error'], 'Password must be at least 8 characters long')
+
+    def test_signup_missing_username(self):
+        response = self.client.post('/signup', json={
+            'password': 'validpassword123'
+            # Username missing
+        })
+        self.assertEqual(response.status_code, 400, msg=response.get_json())
+        self.assertEqual(response.json['error'], 'Username and password are required')
+
+    def test_signup_missing_password(self):
+        response = self.client.post('/signup', json={
+            'username': 'nopassuser'
+            # Password missing
+        })
+        self.assertEqual(response.status_code, 400, msg=response.get_json())
+        self.assertEqual(response.json['error'], 'Username and password are required')
+
+    def test_signup_invalid_json(self):
+        response = self.client.post('/signup', data="not json", content_type='application/json')
+        self.assertEqual(response.status_code, 400, msg=response.get_json())
+        # The actual error message might vary based on Flask/Werkzeug version for malformed JSON
+        json_response = response.get_json()
+        self.assertIn('error', json_response) 
+        self.assertTrue("Invalid JSON" in json_response['error'] or \
+                        "Failed to decode JSON" in json_response['error'] or \
+                        "not a valid JSON" in json_response['error'] or \
+                        "Request body is not valid JSON" in json_response['error']) # Added another common variant
+
 
 class TestExpenseRoutes(BaseTestCase):
     def setUp(self): # Override BaseTestCase.setUp to add specific user for expense tests

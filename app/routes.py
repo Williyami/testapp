@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app # Keep current_app for logger and config
-from .models import User, SESSIONS_DB, Expense, EXPENSES_DB 
+from .models import User, Employee, SESSIONS_DB, Expense, EXPENSES_DB # Added Employee
 from werkzeug.utils import secure_filename
 import os
 import uuid
@@ -188,3 +188,37 @@ def get_expenses():
             "created_at": exp.created_at.isoformat()
         } for exp in user_expenses
     ]), 200
+
+
+@bp.route('/signup', methods=['POST'])
+def signup():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON payload"}), 400
+
+    username = data.get('username')
+    password = data.get('password')
+    # For public signup, role should default to 'employee' and not be user-settable for now.
+    # role = data.get('role', 'employee').lower() 
+
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+
+    if User.get_by_username(username):
+        return jsonify({"error": "Username already exists"}), 409 # 409 Conflict
+
+    # Basic password strength check (e.g., min length)
+    if len(password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters long"}), 400
+
+    # For this public signup, new users are always 'employee'
+    try:
+        # The Employee model's __init__ will pass the password to User.__init__ which hashes it.
+        new_user = Employee(username=username, password=password)
+        new_user.save() # This adds to USERS_DB via User.save()
+    except Exception as e:
+        # Log the exception e for debugging
+        current_app.logger.error(f"Error during user creation: {e}")
+        return jsonify({"error": "An unexpected error occurred during account creation."}), 500
+        
+    return jsonify({"message": "Account created successfully. Please login."}), 201
