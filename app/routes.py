@@ -1,5 +1,6 @@
-from flask import Blueprint, request, jsonify, current_app # Keep current_app for logger and config
-from .models import User, Employee, SESSIONS_DB, Expense, EXPENSES_DB # Added Employee
+print("DEBUG: LOADING app/routes.py - DEBUG VERSION FOR SIGNUP ROUTING CHECK") # Updated
+from flask import Blueprint, request, jsonify, current_app 
+from .models import User, Employee, SESSIONS_DB, Expense, EXPENSES_DB
 from werkzeug.utils import secure_filename
 import os
 import uuid
@@ -10,17 +11,44 @@ from .storage_services import upload_file_to_cloud, delete_file_from_cloud, SIMU
 # Define a Blueprint
 bp = Blueprint('main', __name__)
 
+# --- Temporary Debug Routes ---
+@bp.route('/signup', methods=['GET']) 
+def signup_get_debug():
+    return jsonify({"message": "GET /signup is reachable (debug)"}), 200 # Updated message
+
+@bp.route('/show-routes-debug')
+def show_routes_debug():
+    import urllib.parse 
+    output = []
+    rules = sorted(current_app.url_map.iter_rules(), key=lambda rule: rule.rule)
+    for rule in rules:
+        options = {}
+        for arg in rule.arguments:
+            options[arg] = "[{0}]".format(arg)
+        
+        methods = ','.join(sorted(rule.methods))
+        url = urllib.parse.unquote(rule.rule) 
+        line = "{:50s} {:30s} {}".format(url, methods, options)
+        output.append(line)
+    
+    html_output = "<html><head><title>Registered Routes</title></head><body>"
+    html_output += "<h1>Registered Routes</h1><pre>"
+    html_output += "\n".join(output) # Ensured this matches the prompt's target
+    html_output += "</pre></body></html>"
+    return html_output
+# --- End Temporary Debug Routes ---
+
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@bp.route('/health') # Changed from @current_app.route
+@bp.route('/health') 
 def health_check():
     return jsonify(status="UP", message="Expense platform is running!")
 
-@bp.route('/login', methods=['POST']) # Changed
+@bp.route('/login', methods=['POST']) 
 def login():
     data = request.get_json()
     username = data.get('username')
@@ -41,7 +69,7 @@ def login():
     
     return jsonify({"error": "Invalid credentials"}), 401
 
-@bp.route('/logout', methods=['POST']) # Changed
+@bp.route('/logout', methods=['POST']) 
 def logout():
     token = request.headers.get('Authorization') 
     if token:
@@ -50,7 +78,7 @@ def logout():
             del SESSIONS_DB[token]
     return jsonify({"message": "Logout successful (mocked)"}), 200
 
-@bp.route('/me', methods=['GET']) # Changed
+@bp.route('/me', methods=['GET']) 
 def me():
     token = request.headers.get('Authorization')
     if not token:
@@ -70,7 +98,7 @@ def me():
         }), 200
     return jsonify({"error": "User not found for token"}), 404
 
-@bp.route('/expenses', methods=['POST']) # Changed
+@bp.route('/expenses', methods=['POST']) 
 def submit_expense():
     token = request.headers.get('Authorization')
     if not token: return jsonify({"error": "Missing token"}), 401
@@ -113,7 +141,7 @@ def submit_expense():
     try:
         file.save(temp_receipt_path_for_ocr)
         ocr_results = extract_text_from_receipt(temp_receipt_path_for_ocr)
-        current_app.logger.info(f"OCR Results for {filename}: {ocr_results}") # current_app for logger
+        current_app.logger.info(f"OCR Results for {filename}: {ocr_results}") 
         file.seek(0) 
         cloud_receipt_path = upload_file_to_cloud(file, filename, user.id)
         
@@ -163,7 +191,7 @@ def submit_expense():
         "ocr_data": ocr_results
     }), 201
 
-@bp.route('/expenses', methods=['GET']) # Changed
+@bp.route('/expenses', methods=['GET']) 
 def get_expenses():
     token = request.headers.get('Authorization')
     if not token: return jsonify({"error": "Missing token"}), 401
@@ -198,26 +226,20 @@ def signup():
 
     username = data.get('username')
     password = data.get('password')
-    # For public signup, role should default to 'employee' and not be user-settable for now.
-    # role = data.get('role', 'employee').lower() 
 
     if not username or not password:
         return jsonify({"error": "Username and password are required"}), 400
 
     if User.get_by_username(username):
-        return jsonify({"error": "Username already exists"}), 409 # 409 Conflict
+        return jsonify({"error": "Username already exists"}), 409
 
-    # Basic password strength check (e.g., min length)
     if len(password) < 8:
         return jsonify({"error": "Password must be at least 8 characters long"}), 400
 
-    # For this public signup, new users are always 'employee'
     try:
-        # The Employee model's __init__ will pass the password to User.__init__ which hashes it.
         new_user = Employee(username=username, password=password)
-        new_user.save() # This adds to USERS_DB via User.save()
+        new_user.save()
     except Exception as e:
-        # Log the exception e for debugging
         current_app.logger.error(f"Error during user creation: {e}")
         return jsonify({"error": "An unexpected error occurred during account creation."}), 500
         
