@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.egg-info/
+.installed.cfg
+*.egg
+.DS_Store
+instance/
+.env
+uploads/
+uploads/cloud_simulator/
+uploads/temp_for_ocr/
