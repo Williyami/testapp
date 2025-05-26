@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
+    redirectToLoginIfNoToken(); // From auth_utils.js
+
     const expenseForm = document.getElementById('expenseForm');
     const submitButton = document.getElementById('submitExpenseButton');
     const messageContainer = document.getElementById('message-container');
@@ -10,6 +12,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const notesTextarea = document.getElementById('expenseNotes');
     const receiptInput = document.getElementById('receiptFile');
     const topPlusButton = document.getElementById('addExpenseTopButton');
+    const logoutButton = document.getElementById('logoutButtonExpensesPage'); // Added
+
+    if (logoutButton) {
+        logoutButton.addEventListener('click', function () {
+            clearAuthData(); // From auth_utils.js
+            window.location.href = 'login.html';
+        });
+    } else {
+        console.warn('Logout button (id="logoutButtonExpensesPage") not found on expenses.html.');
+    }
 
     if (!expenseForm || !submitButton || !messageContainer || !receiptInput || !expenseNameInput || !categorySelect || !amountInput || !dateInput || !notesTextarea) {
         console.error('Essential page elements not found. Check IDs for form, submit button, message container, receipt input, and all form fields.');
@@ -59,9 +71,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            const authToken = localStorage.getItem('authToken');
+            const authToken = getToken(); // Use getToken() from auth_utils.js
             if (!authToken) {
                 displayMessage('Authentication token not found. Please log in.', 'error');
+                // Optionally, redirect to login: redirectToLoginIfNoToken();
                 return;
             }
 
@@ -79,6 +92,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 displayMessage('Expense submitted successfully! ID: ' + result.expense.id, 'success');
                 if(expenseForm) expenseForm.reset();
             } else {
+                 if (response.status === 401) { // Unauthorized or token expired
+                    clearAuthData();
+                    redirectToLoginIfNoToken();
+                }
                 displayMessage('Error submitting expense: ' + (result.error || response.statusText || 'Unknown server error'), 'error');
             }
         } catch (error) {

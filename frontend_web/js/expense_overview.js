@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
+    redirectToLoginIfNoToken(); // From auth_utils.js
+
     const recentSubmissionsContainer = document.getElementById('recentSubmissionsContainer');
     const pastExpensesContainer = document.getElementById('pastExpensesContainer');
     const addExpenseButton = document.getElementById('addExpenseButton'); // Plus button
@@ -8,6 +10,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const dateFilterButton = document.getElementById('dateFilterButton');
     const statusFilterButton = document.getElementById('statusFilterButton');
     const chatWithAIButton = document.getElementById('chatWithAIButton');
+    const logoutButton = document.getElementById('logoutButtonOverviewPage');
+
+    if (logoutButton) {
+        logoutButton.addEventListener('click', function () {
+            clearAuthData(); // From auth_utils.js
+            window.location.href = 'login.html';
+        });
+    } else {
+        console.warn('Logout button (id="logoutButtonOverviewPage") not found on expense_overview.html.');
+    }
 
     // Helper function to create an expense item element
     const createExpenseItemHTML = (expense) => {
@@ -21,12 +33,6 @@ document.addEventListener('DOMContentLoaded', function () {
             statusColor = 'bg-red-500'; // Red for rejected
         }
         // Add more conditions for other statuses like 'pending', 'processing', etc.
-
-        // For "Recent Submissions", show a dot. For "Past Expenses", show text.
-        // This will require knowing which container we are rendering to, or having two different render functions.
-        // For now, let's make it simple and use the dot for all.
-        // The original HTML had text for "Past Expenses" status.
-        // We'll use a generic structure and adapt if needed.
 
         return `
             <div class="flex items-center gap-4 bg-white px-4 min-h-[72px] py-2 justify-between expense-item">
@@ -54,8 +60,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Function to fetch and render expenses
     const loadExpenses = async () => {
-        const authToken = localStorage.getItem('authToken');
-        if (!authToken) {
+        const authToken = getToken(); // Use getToken() from auth_utils.js
+        if (!authToken) { // Should have been redirected by redirectToLoginIfNoToken, but good to double check
             if(recentSubmissionsContainer) recentSubmissionsContainer.innerHTML = '<p class="px-4 text-red-500">Please log in to see expenses.</p>';
             if(pastExpensesContainer) pastExpensesContainer.innerHTML = '';
             return;
@@ -66,13 +72,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: { 'Authorization': 'Bearer ' + authToken }
             });
             if (!response.ok) {
+                if (response.status === 401) { // Unauthorized
+                    clearAuthData();
+                    redirectToLoginIfNoToken();
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const expenses = await response.json();
 
             if (recentSubmissionsContainer) {
-                recentSubmissionsContainer.innerHTML = ''; // Clear static content
-                // Display first 3 as recent, or customize as needed
+                recentSubmissionsContainer.innerHTML = ''; 
                 expenses.slice(0, 3).forEach(expense => {
                     recentSubmissionsContainer.innerHTML += createExpenseItemHTML(expense);
                 });
@@ -82,14 +91,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             if (pastExpensesContainer) {
-                pastExpensesContainer.innerHTML = ''; // Clear static content
-                // Display the rest (or all if no separate recent) as past
-                expenses.forEach(expense => { // Or expenses.slice(3) if recent is separate
+                pastExpensesContainer.innerHTML = ''; 
+                expenses.forEach(expense => { 
                     pastExpensesContainer.innerHTML += createExpenseItemHTML(expense);
                 });
                  if (expenses.length === 0 && recentSubmissionsContainer.innerHTML.includes('No recent submissions')) {
-                    // Only show if no expenses at all
-                } else if (expenses.length === 0) {
+                 } else if (expenses.length === 0) {
                      pastExpensesContainer.innerHTML = '<p class="px-4 text-gray-500">No past expenses found.</p>';
                 }
             }
@@ -103,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Event Listeners
     if (addExpenseButton) {
         addExpenseButton.addEventListener('click', () => {
-            window.location.href = 'expenses.html'; // Navigate to the expense submission page
+            window.location.href = 'expenses.html'; 
         });
     }
 
@@ -111,48 +118,23 @@ document.addEventListener('DOMContentLoaded', function () {
         searchButton.addEventListener('click', () => {
             const searchTerm = searchInput.value;
             console.log('Search term:', searchTerm);
-            // Placeholder: Implement search functionality (e.g., filter displayed expenses or call API)
             alert('Search functionality to be implemented. Searched for: ' + searchTerm);
         });
     }
     
-    // Also allow search on Enter key press in input
     if (searchInput) {
         searchInput.addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
-                event.preventDefault(); // Prevent form submission if it's part of a form
-                searchButton.click(); // Trigger the search button's click handler
+                event.preventDefault(); 
+                if(searchButton) searchButton.click();
             }
         });
     }
 
+    if (categoryFilterButton) categoryFilterButton.addEventListener('click', () => alert('Category filter functionality to be implemented.'));
+    if (dateFilterButton) dateFilterButton.addEventListener('click', () => alert('Date filter functionality to be implemented.'));
+    if (statusFilterButton) statusFilterButton.addEventListener('click', () => alert('Status filter functionality to be implemented.'));
+    if (chatWithAIButton) chatWithAIButton.addEventListener('click', () => alert('Chat with AI functionality to be implemented.'));
 
-    if (categoryFilterButton) {
-        categoryFilterButton.addEventListener('click', () => {
-            console.log('Category filter clicked');
-            alert('Category filter functionality to be implemented.');
-        });
-    }
-    if (dateFilterButton) {
-        dateFilterButton.addEventListener('click', () => {
-            console.log('Date filter clicked');
-            alert('Date filter functionality to be implemented.');
-        });
-    }
-    if (statusFilterButton) {
-        statusFilterButton.addEventListener('click', () => {
-            console.log('Status filter clicked');
-            alert('Status filter functionality to be implemented.');
-        });
-    }
-
-    if (chatWithAIButton) {
-        chatWithAIButton.addEventListener('click', () => {
-            console.log('Chat with AI clicked');
-            alert('Chat with AI functionality to be implemented.');
-        });
-    }
-
-    // Initial load of expenses
     loadExpenses();
 });
