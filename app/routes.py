@@ -1,5 +1,5 @@
 print("DEBUG: LOADING app/routes.py - DEBUG VERSION FOR SIGNUP ROUTING CHECK") 
-from flask import Blueprint, request, jsonify, current_app 
+from flask import Blueprint, request, jsonify, current_app, send_from_directory
 from .models import User, Employee, Expense # EXPENSES_DB removed
 from .database import get_db 
 from werkzeug.utils import secure_filename
@@ -403,3 +403,18 @@ def reject_expense_admin(expense_id):
 # which is now correctly defined as POST-only.
 # The temporary GET handler for /signup was also part of combined_signup_route and is now removed.
 # The /show-routes-debug function was also removed.
+
+@bp.route('/admindashboard.html')
+def serve_admin_dashboard():
+    # Determine the correct path to the frontend_web directory.
+    # current_app.root_path is typically the 'app' directory in this structure.
+    # So, os.path.dirname(current_app.root_path) gives the project root.
+    project_root_path = os.path.dirname(current_app.root_path)
+    frontend_web_dir = os.path.join(project_root_path, 'frontend_web')
+    return send_from_directory(frontend_web_dir, 'admindashboard.html')
+
+@bp.route('/js/<path:filename>')
+def serve_js(filename):
+    project_root_path = os.path.dirname(current_app.root_path)
+    js_dir = os.path.join(project_root_path, 'frontend_web', 'js')
+    return send_from_directory(js_dir, filename)
