@@ -418,3 +418,28 @@ def serve_js(filename):
     project_root_path = os.path.dirname(current_app.root_path)
     js_dir = os.path.join(project_root_path, 'frontend_web', 'js')
     return send_from_directory(js_dir, filename)
+
+@bp.route('/')
+@bp.route('/login.html')
+def serve_login_page():
+    project_root_path = os.path.dirname(current_app.root_path)
+    frontend_web_dir = os.path.join(project_root_path, 'frontend_web')
+    return send_from_directory(frontend_web_dir, 'login.html')
+
+@bp.route('/signup.html')
+def serve_signup_page():
+    project_root_path = os.path.dirname(current_app.root_path)
+    frontend_web_dir = os.path.join(project_root_path, 'frontend_web')
+    return send_from_directory(frontend_web_dir, 'signup.html')
+
+@bp.route('/expenses.html')
+def serve_expenses_page():
+    project_root_path = os.path.dirname(current_app.root_path)
+    frontend_web_dir = os.path.join(project_root_path, 'frontend_web')
+    return send_from_directory(frontend_web_dir, 'expenses.html')
+
+@bp.route('/expense_overview.html')
+def serve_expense_overview_page():
+    project_root_path = os.path.dirname(current_app.root_path)
+    frontend_web_dir = os.path.join(project_root_path, 'frontend_web')
+    return send_from_directory(frontend_web_dir, 'expense_overview.html')
