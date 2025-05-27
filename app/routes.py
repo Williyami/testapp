@@ -1,8 +1,11 @@
+print("DEBUG: LOADING app/routes.py - DEBUG VERSION FOR SIGNUP ROUTING CHECK") 
 from flask import Blueprint, request, jsonify, current_app 
-from .models import User, Employee, SESSIONS_DB, Expense, EXPENSES_DB
+from .models import User, Employee, Expense, EXPENSES_DB # SESSIONS_DB removed
+from .database import get_db # Added
 from werkzeug.utils import secure_filename
 import os
 import uuid
+from datetime import datetime, timedelta # Added
 
 from .ocr_services import extract_text_from_receipt
 from .storage_services import upload_file_to_cloud, delete_file_from_cloud, SIMULATED_CLOUD_FOLDER
@@ -13,9 +16,8 @@ bp = Blueprint('main', __name__)
 # Debug print statement removed.
 # Debug routes /show-routes-debug and GET /signup removed.
 
-@bp.route('/signup', methods=['POST']) # Only POST method
-def combined_signup_route(): # Function name can be kept or changed to signup()
-    # This block now ONLY contains the logic for POST requests:
+@bp.route('/signup', methods=['POST']) 
+def combined_signup_route(): 
     data = request.get_json()
     if not data:
         return jsonify({"error": "Invalid JSON payload"}), 400
@@ -64,12 +66,21 @@ def login():
 
     user = User.get_by_username(username)
     if user and user.check_password(password):
+        sessions_collection = get_db().sessions # MongoDB sessions
         session_token = str(uuid.uuid4())
-        SESSIONS_DB[session_token] = user.username 
+        expires_at = datetime.utcnow() + timedelta(days=1) 
+        session_doc = {
+            '_id': session_token,
+            'username': user.username, 
+            'expires_at': expires_at
+        }
+        sessions_collection.update_one({'_id': session_token}, {'$set': session_doc}, upsert=True)
+        
         return jsonify({
             "message": "Login successful",
             "token": session_token,
-            "user": {"username": user.username, "role": user.role, "id": user.id}
+            # Use user.username as id, as User.id (uuid) was removed
+            "user": {"username": user.username, "role": user.role, "id": user.username} 
         }), 200
     
     return jsonify({"error": "Invalid credentials"}), 401
@@ -79,9 +90,10 @@ def logout():
     token = request.headers.get('Authorization') 
     if token:
         token = token.replace("Bearer ", "")
-        if token in SESSIONS_DB:
-            del SESSIONS_DB[token]
-    return jsonify({"message": "Logout successful (mocked)"}), 200
+        if token: # Ensure token is not empty after replace
+            sessions_collection = get_db().sessions
+            sessions_collection.delete_one({'_id': token})
+    return jsonify({"message": "Logout successful"}), 200 # Always return success for logout
 
 @bp.route('/me', methods=['GET']) 
 def me():
@@ -90,28 +102,53 @@ def me():
         return jsonify({"error": "Missing token"}), 401
     
     token = token.replace("Bearer ", "")
-    username = SESSIONS_DB.get(token)
-    if not username:
-        return jsonify({"error": "Invalid or expired token"}), 401
+    if not token: # Check if token is empty after replace
+        return jsonify({"error": "Invalid token format"}), 401
+
+    sessions_collection = get_db().sessions
+    session_doc = sessions_collection.find_one({'_id': token})
+
+    if session_doc:
+        if session_doc.get('expires_at') and session_doc['expires_at'] < datetime.utcnow():
+            sessions_collection.delete_one({'_id': token}) 
+            return jsonify({"error": "Session expired. Please login again."}), 401
+
+        username_from_session = session_doc.get('username')
+        if username_from_session:
+            user = User.get_by_username(username_from_session) 
+            if user:
+                return jsonify({
+                    "username": user.username,
+                    "role": user.role,
+                    "id": user.username # Using username as id for frontend
+                }), 200
+            # This case means session token was valid, but user it points to doesn't exist
+            return jsonify({"error": "User associated with session not found"}), 404 
         
-    user = User.get_by_username(username)
-    if user:
-        return jsonify({
-            "username": user.username,
-            "role": user.role,
-            "id": user.id
-        }), 200
-    return jsonify({"error": "User not found for token"}), 404
+    return jsonify({"error": "Invalid or expired token"}), 401
 
 @bp.route('/expenses', methods=['POST']) 
 def submit_expense():
     token = request.headers.get('Authorization')
     if not token: return jsonify({"error": "Missing token"}), 401
     token = token.replace("Bearer ", "")
-    username = SESSIONS_DB.get(token)
-    if not username: return jsonify({"error": "Invalid or expired token"}), 401
+    
+    # Using MongoDB for session check here as well
+    sessions_collection = get_db().sessions
+    session_doc = sessions_collection.find_one({'_id': token})
+    if not session_doc:
+        return jsonify({"error": "Invalid or expired token"}), 401
+    if session_doc.get('expires_at') and session_doc['expires_at'] < datetime.utcnow():
+        sessions_collection.delete_one({'_id': token})
+        return jsonify({"error": "Session expired. Please login again."}), 401
+    
+    username = session_doc.get('username')
+    if not username: # Should not happen if session_doc is valid
+         return jsonify({"error": "Username not found in session"}), 401
+
     user = User.get_by_username(username)
-    if not user or user.role != "employee": return jsonify({"error": "Unauthorized"}), 403
+    if not user or user.role != "employee": return jsonify({"error": "Unauthorized or not an employee"}), 403
+
 
     if 'receipt' not in request.files: return jsonify({"error": "No receipt file part"}), 400
     file = request.files['receipt']
@@ -148,10 +185,11 @@ def submit_expense():
         ocr_results = extract_text_from_receipt(temp_receipt_path_for_ocr)
         current_app.logger.info(f"OCR Results for {filename}: {ocr_results}") 
         file.seek(0) 
-        cloud_receipt_path = upload_file_to_cloud(file, filename, user.id)
+        # Pass user.username as the user_id for storage, as it's the unique identifier
+        cloud_receipt_path = upload_file_to_cloud(file, filename, user.username) 
         
         new_expense = Expense(
-            user_id=user.id,
+            user_id=user.username, # Use username as user_id for expenses
             amount=amount,
             currency=currency,
             date=date_str,
@@ -159,7 +197,7 @@ def submit_expense():
             description=description,
             receipt_cloud_path=cloud_receipt_path
         )
-        new_expense.save()
+        new_expense.save() # This still uses in-memory EXPENSES_DB
 
     except ValueError as e:
         if cloud_receipt_path:
@@ -182,8 +220,8 @@ def submit_expense():
     return jsonify({
         "message": "Expense submitted successfully",
         "expense": {
-            "id": new_expense.id,
-            "user_id": new_expense.user_id,
+            "id": new_expense.id, # Expense ID is still UUID
+            "user_id": new_expense.user_id, # This is now username
             "amount": new_expense.amount,
             "currency": new_expense.currency,
             "date": new_expense.date.isoformat(),
@@ -201,16 +239,29 @@ def get_expenses():
     token = request.headers.get('Authorization')
     if not token: return jsonify({"error": "Missing token"}), 401
     token = token.replace("Bearer ", "")
-    username = SESSIONS_DB.get(token)
-    if not username: return jsonify({"error": "Invalid or expired token"}), 401
+
+    # Using MongoDB for session check here as well
+    sessions_collection = get_db().sessions
+    session_doc = sessions_collection.find_one({'_id': token})
+    if not session_doc:
+        return jsonify({"error": "Invalid or expired token"}), 401
+    if session_doc.get('expires_at') and session_doc['expires_at'] < datetime.utcnow():
+        sessions_collection.delete_one({'_id': token})
+        return jsonify({"error": "Session expired. Please login again."}), 401
+
+    username = session_doc.get('username')
+    if not username:
+         return jsonify({"error": "Username not found in session"}), 401
+
     user = User.get_by_username(username)
-    if not user: return jsonify({"error": "User not found"}), 404
+    if not user: return jsonify({"error": "User not found"}), 404 # Should not happen if session is valid
     
-    user_expenses = Expense.get_by_user_id(user.id)
+    # user_id for Expense.get_by_user_id is now username
+    user_expenses = Expense.get_by_user_id(user.username) 
     return jsonify([
         {
             "id": exp.id,
-            "user_id": exp.user_id,
+            "user_id": exp.user_id, # This is username
             "amount": exp.amount,
             "currency": exp.currency,
             "date": exp.date.isoformat(),
