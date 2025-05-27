@@ -276,6 +276,129 @@ def get_expenses():
         } for exp in user_expenses
     ]), 200
 
+@bp.route('/api/admin/expenses', methods=['GET'])
+def get_all_expenses_admin():
+    # 1. Authenticate and Authorize Admin
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"error": "Missing token"}), 401
+
+    token = token.replace("Bearer ", "")
+    if not token: # Check if token is empty after stripping "Bearer "
+        return jsonify({"error": "Invalid token format"}), 401
+
+    sessions_collection = get_db().sessions
+    session_doc = sessions_collection.find_one({'_id': token})
+
+    if not session_doc:
+        return jsonify({"error": "Invalid or expired token"}), 401
+
+    # Check for session expiry
+    if session_doc.get('expires_at') and session_doc['expires_at'] < datetime.utcnow():
+        sessions_collection.delete_one({'_id': token}) # Clean up expired session
+        return jsonify({"error": "Session expired. Please login again."}), 401
+
+    username_from_session = session_doc.get('username')
+    if not username_from_session:
+        return jsonify({"error": "Session is invalid (no username)"}), 401 # Should not happen if session is valid
+
+    user = User.get_by_username(username_from_session)
+    if not user:
+        # This case implies data inconsistency if session exists but user doesn't
+        return jsonify({"error": "User associated with session not found"}), 404 
+
+    if user.role != 'admin':
+        return jsonify({"error": "Forbidden: Admin access required"}), 403
+
+    # 2. Fetch all expenses
+    try:
+        all_expenses_models = Expense.get_all() # Uses the new model method
+        
+        # 3. Format response according to requirements
+        expenses_list_response = []
+        for exp_model in all_expenses_models:
+            expenses_list_response.append({
+                "id": str(exp_model._id),
+                "employee_id": exp_model.user_id, # user_id in model maps to employee_id
+                "amount": exp_model.amount,
+                "currency": exp_model.currency, # Added currency for context
+                "date": exp_model.date.isoformat(),
+                "vendor": exp_model.vendor,
+                "status": exp_model.status,
+                "description": exp_model.description
+            })
+        return jsonify(expenses_list_response), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error fetching all expenses for admin: {e}")
+        return jsonify({"error": "An internal error occurred while retrieving expenses."}), 500
+
+@bp.route('/api/admin/expenses/<expense_id>/approve', methods=['POST'])
+def approve_expense_admin(expense_id):
+    # Authentication and Authorization (similar to get_all_expenses_admin)
+    token = request.headers.get('Authorization')
+    if not token: return jsonify({"error": "Missing token"}), 401
+    token = token.replace("Bearer ", "")
+    if not token: return jsonify({"error": "Invalid token format"}), 401
+
+    sessions_collection = get_db().sessions
+    session_doc = sessions_collection.find_one({'_id': token})
+    if not session_doc: return jsonify({"error": "Invalid or expired token"}), 401
+    if session_doc.get('expires_at') and session_doc['expires_at'] < datetime.utcnow():
+        sessions_collection.delete_one({'_id': token})
+        return jsonify({"error": "Session expired. Please login again."}), 401
+    
+    username_from_session = session_doc.get('username')
+    if not username_from_session: return jsonify({"error": "Session is invalid"}), 401
+        
+    user = User.get_by_username(username_from_session)
+    if not user: return jsonify({"error": "User not found"}), 404
+    if user.role != 'admin': return jsonify({"error": "Forbidden: Admin access required"}), 403
+
+    # Update expense status
+    try:
+        if Expense.update_status(expense_id, "approved"):
+            return jsonify({"message": "Expense approved successfully"}), 200
+        else:
+            # This could be due to invalid expense_id format or expense not found
+            return jsonify({"error": "Expense not found or invalid ID format"}), 404
+    except Exception as e:
+        current_app.logger.error(f"Error approving expense {expense_id}: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
+
+@bp.route('/api/admin/expenses/<expense_id>/reject', methods=['POST'])
+def reject_expense_admin(expense_id):
+    # Authentication and Authorization (similar to get_all_expenses_admin)
+    token = request.headers.get('Authorization')
+    if not token: return jsonify({"error": "Missing token"}), 401
+    token = token.replace("Bearer ", "")
+    if not token: return jsonify({"error": "Invalid token format"}), 401
+
+    sessions_collection = get_db().sessions
+    session_doc = sessions_collection.find_one({'_id': token})
+    if not session_doc: return jsonify({"error": "Invalid or expired token"}), 401
+    if session_doc.get('expires_at') and session_doc['expires_at'] < datetime.utcnow():
+        sessions_collection.delete_one({'_id': token})
+        return jsonify({"error": "Session expired. Please login again."}), 401
+
+    username_from_session = session_doc.get('username')
+    if not username_from_session: return jsonify({"error": "Session is invalid"}), 401
+
+    user = User.get_by_username(username_from_session)
+    if not user: return jsonify({"error": "User not found"}), 404
+    if user.role != 'admin': return jsonify({"error": "Forbidden: Admin access required"}), 403
+
+    # Update expense status
+    try:
+        if Expense.update_status(expense_id, "rejected"):
+            return jsonify({"message": "Expense rejected successfully"}), 200
+        else:
+            # This could be due to invalid expense_id format or expense not found
+            return jsonify({"error": "Expense not found or invalid ID format"}), 404
+    except Exception as e:
+        current_app.logger.error(f"Error rejecting expense {expense_id}: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
+
 # Note: The old POST-only signup function was part of the combined_signup_route,
 # which is now correctly defined as POST-only.
 # The temporary GET handler for /signup was also part of combined_signup_route and is now removed.

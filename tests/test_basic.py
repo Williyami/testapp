@@ -7,8 +7,9 @@ import sys # Added for path adjustment if needed, though BaseTestCase handles it
 # Assuming BaseTestCase is in a 'base.py' sibling file.
 # BaseTestCase already adds project_root to sys.path
 from tests.base import BaseTestCase 
-from app.models import User, Employee, Admin # USERS_DB removed as it's no longer used
+from app.models import User, Employee, Admin, Expense # Added Expense
 from app.storage_services import SIMULATED_CLOUD_FOLDER # To check paths
+from bson.objectid import ObjectId # Added ObjectId
 
 
 class TestAuthRoutes(BaseTestCase):
@@ -220,6 +221,166 @@ class TestExpenseRoutes(BaseTestCase):
         self.assertEqual(response_emp2_gets_expenses.status_code, 200)
         self.assertEqual(len(response_emp2_gets_expenses.get_json()), 0, 
                          "emp2 should not see emp1's expenses.")
+
+# --- Admin Expense Routes Tests ---
+class TestAdminExpenseRoutes(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        # Create an admin user
+        self.admin_user = Admin("testadmin", "adminpass") # Use direct import
+        self.admin_user.save()
+        self.admin_token = self.login_as("testadmin", "adminpass")
+
+        # Create a regular employee user
+        self.employee_user_for_admin_tests = Employee("testemp_admin", "emppass") # Use direct import
+        self.employee_user_for_admin_tests.save()
+        self.employee_token_for_admin_tests = self.login_as("testemp_admin", "emppass")
+
+    def _create_sample_expense(self, user_id, amount, currency, date_str, vendor, description, status="pending"):
+        expense = Expense( # Use direct import
+            user_id=user_id,
+            amount=amount,
+            currency=currency,
+            date_str=date_str,
+            vendor=vendor,
+            description=description,
+            receipt_cloud_path=f"{SIMULATED_CLOUD_FOLDER}/sample_receipt_{vendor.replace(' ', '_')}.pdf",
+            status=status
+        )
+        expense.save()
+        return expense
+
+    # Tests for GET /api/admin/expenses
+    def test_get_all_expenses_admin_success(self):
+        # Create sample expenses
+        self._create_sample_expense(self.employee_user_for_admin_tests.username, "100.00", "USD", "2024-01-15", "Vendor A", "Lunch")
+        self._create_sample_expense(self.employee_user_for_admin_tests.username, "200.00", "EUR", "2024-01-16", "Vendor B", "Train ticket")
+
+        response = self.client.get('/api/admin/expenses', headers={'Authorization': f'Bearer {self.admin_token}'})
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertIsInstance(data, list)
+        self.assertEqual(len(data), 2)
+        # Check for required fields in one of the expenses
+        if len(data) > 0:
+            expense_item = data[0]
+            self.assertIn("id", expense_item)
+            self.assertIn("employee_id", expense_item)
+            self.assertIn("amount", expense_item)
+            self.assertIn("currency", expense_item)
+            self.assertIn("date", expense_item)
+            self.assertIn("vendor", expense_item)
+            self.assertIn("status", expense_item)
+            self.assertIn("description", expense_item)
+
+    def test_get_all_expenses_admin_no_expenses(self):
+        response = self.client.get('/api/admin/expenses', headers={'Authorization': f'Bearer {self.admin_token}'})
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertIsInstance(data, list)
+        self.assertEqual(len(data), 0)
+
+    def test_get_all_expenses_employee_forbidden(self):
+        response = self.client.get('/api/admin/expenses', headers={'Authorization': f'Bearer {self.employee_token_for_admin_tests}'})
+        self.assertEqual(response.status_code, 403)
+
+    def test_get_all_expenses_unauthenticated(self):
+        response = self.client.get('/api/admin/expenses')
+        self.assertEqual(response.status_code, 401)
+
+    # Tests for POST /api/admin/expenses/<expense_id>/approve
+    def test_approve_pending_expense_admin_success(self):
+        expense = self._create_sample_expense(self.employee_user_for_admin_tests.username, "50.00", "USD", "2024-01-17", "Pending Corp", "Stationery", status="pending")
+        expense_id_str = str(expense._id)
+
+        response = self.client.post(f'/api/admin/expenses/{expense_id_str}/approve', headers={'Authorization': f'Bearer {self.admin_token}'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()['message'], 'Expense approved successfully')
+
+        updated_expense = Expense.get_by_id(expense_id_str) # Use direct import
+        self.assertIsNotNone(updated_expense)
+        self.assertEqual(updated_expense.status, 'approved')
+
+    def test_approve_expense_employee_forbidden(self):
+        expense = self._create_sample_expense(self.employee_user_for_admin_tests.username, "60.00", "USD", "2024-01-18", "Test Co", "Snacks", status="pending")
+        response = self.client.post(f'/api/admin/expenses/{str(expense._id)}/approve', headers={'Authorization': f'Bearer {self.employee_token_for_admin_tests}'})
+        self.assertEqual(response.status_code, 403)
+
+    def test_approve_expense_unauthenticated(self):
+        expense = self._create_sample_expense(self.employee_user_for_admin_tests.username, "70.00", "USD", "2024-01-19", "Another Co", "Coffee", status="pending")
+        response = self.client.post(f'/api/admin/expenses/{str(expense._id)}/approve')
+        self.assertEqual(response.status_code, 401)
+
+    def test_approve_already_approved_expense_admin(self):
+        expense = self._create_sample_expense(self.employee_user_for_admin_tests.username, "80.00", "USD", "2024-01-20", "Old Approval", "Books", status="approved")
+        response = self.client.post(f'/api/admin/expenses/{str(expense._id)}/approve', headers={'Authorization': f'Bearer {self.admin_token}'})
+        self.assertEqual(response.status_code, 200) # Should be idempotent
+        updated_expense = Expense.get_by_id(str(expense._id)) # Use direct import
+        self.assertEqual(updated_expense.status, 'approved')
+
+    def test_approve_rejected_expense_admin(self):
+        expense = self._create_sample_expense(self.employee_user_for_admin_tests.username, "90.00", "USD", "2024-01-21", "Flip Flop Inc", "Magazines", status="rejected")
+        response = self.client.post(f'/api/admin/expenses/{str(expense._id)}/approve', headers={'Authorization': f'Bearer {self.admin_token}'})
+        self.assertEqual(response.status_code, 200)
+        updated_expense = Expense.get_by_id(str(expense._id)) # Use direct import
+        self.assertEqual(updated_expense.status, 'approved')
+
+    def test_approve_invalid_expense_id_admin(self):
+        invalid_id = "invalid_object_id_string" 
+        response = self.client.post(f'/api/admin/expenses/{invalid_id}/approve', headers={'Authorization': f'Bearer {self.admin_token}'})
+        self.assertEqual(response.status_code, 404) # model.update_status returns False for invalid id format
+
+        non_existent_id = str(ObjectId()) # Use direct import; Valid format, but doesn't exist
+        response = self.client.post(f'/api/admin/expenses/{non_existent_id}/approve', headers={'Authorization': f'Bearer {self.admin_token}'})
+        self.assertEqual(response.status_code, 404)
+
+
+    # Tests for POST /api/admin/expenses/<expense_id>/reject
+    def test_reject_pending_expense_admin_success(self):
+        expense = self._create_sample_expense(self.employee_user_for_admin_tests.username, "55.00", "EUR", "2024-01-22", "Reject Corp", "Lunch", status="pending")
+        expense_id_str = str(expense._id)
+
+        response = self.client.post(f'/api/admin/expenses/{expense_id_str}/reject', headers={'Authorization': f'Bearer {self.admin_token}'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()['message'], 'Expense rejected successfully')
+
+        updated_expense = Expense.get_by_id(expense_id_str) # Use direct import
+        self.assertIsNotNone(updated_expense)
+        self.assertEqual(updated_expense.status, 'rejected')
+
+    def test_reject_expense_employee_forbidden(self):
+        expense = self._create_sample_expense(self.employee_user_for_admin_tests.username, "65.00", "EUR", "2024-01-23", "No Access Co", "Dinner", status="pending")
+        response = self.client.post(f'/api/admin/expenses/{str(expense._id)}/reject', headers={'Authorization': f'Bearer {self.employee_token_for_admin_tests}'})
+        self.assertEqual(response.status_code, 403)
+
+    def test_reject_expense_unauthenticated(self):
+        expense = self._create_sample_expense(self.employee_user_for_admin_tests.username, "75.00", "EUR", "2024-01-24", "Authless Co", "Breakfast", status="pending")
+        response = self.client.post(f'/api/admin/expenses/{str(expense._id)}/reject')
+        self.assertEqual(response.status_code, 401)
+
+    def test_reject_already_rejected_expense_admin(self):
+        expense = self._create_sample_expense(self.employee_user_for_admin_tests.username, "85.00", "EUR", "2024-01-25", "Already Rejected", "Supplies", status="rejected")
+        response = self.client.post(f'/api/admin/expenses/{str(expense._id)}/reject', headers={'Authorization': f'Bearer {self.admin_token}'})
+        self.assertEqual(response.status_code, 200) # Idempotent
+        updated_expense = Expense.get_by_id(str(expense._id)) # Use direct import
+        self.assertEqual(updated_expense.status, 'rejected')
+
+    def test_reject_approved_expense_admin(self):
+        expense = self._create_sample_expense(self.employee_user_for_admin_tests.username, "95.00", "EUR", "2024-01-26", "Reconsider Inc", "Software", status="approved")
+        response = self.client.post(f'/api/admin/expenses/{str(expense._id)}/reject', headers={'Authorization': f'Bearer {self.admin_token}'})
+        self.assertEqual(response.status_code, 200)
+        updated_expense = Expense.get_by_id(str(expense._id)) # Use direct import
+        self.assertEqual(updated_expense.status, 'rejected')
+
+    def test_reject_invalid_expense_id_admin(self):
+        invalid_id = "another_invalid_object_id_string"
+        response = self.client.post(f'/api/admin/expenses/{invalid_id}/reject', headers={'Authorization': f'Bearer {self.admin_token}'})
+        self.assertEqual(response.status_code, 404)
+
+        non_existent_id = str(ObjectId()) # Use direct import; Valid format, but doesn't exist
+        response = self.client.post(f'/api/admin/expenses/{non_existent_id}/reject', headers={'Authorization': f'Bearer {self.admin_token}'})
+        self.assertEqual(response.status_code, 404)
+
 
 if __name__ == '__main__':
     unittest.main()

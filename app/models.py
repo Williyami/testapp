@@ -150,6 +150,37 @@ class Expense:
         expense_docs = expenses_collection.find({'user_id': user_id}).sort('date', -1) 
         return [cls.from_document(doc) for doc in expense_docs]
 
+    @classmethod
+    def get_all(cls):
+        """Fetches all expenses from the database, sorted by date descending."""
+        expenses_collection = get_db().expenses
+        # Sort by date descending, most recent first
+        all_expense_docs = expenses_collection.find({}).sort('date', -1)
+        return [cls.from_document(doc) for doc in all_expense_docs]
+
+    @classmethod
+    def update_status(cls, expense_id_str, new_status):
+        """
+        Updates the status of an expense by its ID.
+        Returns True if the update was successful (expense found and updated),
+        False otherwise (e.g., expense not found or invalid ID format).
+        """
+        if not new_status in ["approved", "rejected", "pending"]: # Basic validation
+            # Or raise ValueError("Invalid status")
+            return False 
+            
+        try:
+            obj_id = ObjectId(expense_id_str)
+        except Exception: # Handles invalid ObjectId format
+            return False
+
+        expenses_collection = get_db().expenses
+        result = expenses_collection.update_one(
+            {'_id': obj_id},
+            {'$set': {'status': new_status}}
+        )
+        return result.matched_count > 0
+
     def get_receipt_url(self):
         from .storage_services import get_file_url_from_cloud 
         return get_file_url_from_cloud(self.receipt_cloud_path)
