@@ -18,9 +18,10 @@ bp = Blueprint('main', __name__)
 
 @bp.route('/signup', methods=['POST']) 
 def combined_signup_route(): 
-    data = request.get_json()
+    data = request.get_json(silent=True) # Use silent=True to prevent raising BadRequest on parse error
     if not data:
-        return jsonify({"error": "Invalid JSON payload"}), 400
+        # This will now catch both empty payload and malformed JSON
+        return jsonify({"error": "Invalid JSON payload or malformed JSON"}), 400
 
     username = data.get('username')
     password = data.get('password')

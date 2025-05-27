@@ -7,7 +7,7 @@ import sys # Added for path adjustment if needed, though BaseTestCase handles it
 # Assuming BaseTestCase is in a 'base.py' sibling file.
 # BaseTestCase already adds project_root to sys.path
 from tests.base import BaseTestCase 
-from app.models import User, USERS_DB, Employee, Admin # Ensure User is imported for get_by_username
+from app.models import User, Employee, Admin # USERS_DB removed as it's no longer used
 from app.storage_services import SIMULATED_CLOUD_FOLDER # To check paths
 
 
@@ -18,8 +18,10 @@ class TestAuthRoutes(BaseTestCase):
         self.assertEqual(response.json['status'], 'UP')
 
     def test_dummy_users_created(self):
-        self.assertIsNotNone(USERS_DB.get("emp1"))
-        self.assertIsNotNone(USERS_DB.get("admin1"))
+        # Dummy users are created in BaseTestCase.setUp via models.create_dummy_users()
+        # which now uses mongomock
+        self.assertIsNotNone(User.get_by_username("emp1"))
+        self.assertIsNotNone(User.get_by_username("admin1"))
 
     def test_login_employee(self):
         response = self.client.post('/login', json={'username': 'emp1', 'password': 'emp1pass'})
@@ -53,9 +55,7 @@ class TestAuthRoutes(BaseTestCase):
 
     # --- New Signup Tests ---
     def test_signup_successful_employee(self):
-        # Ensure USERS_DB is clean for this specific username before test
-        USERS_DB.pop("newemp", None) # Remove if exists from a previous failed run
-
+        # USERS_DB.pop is no longer needed as mongomock collections are cleared in BaseTestCase.tearDown
         response = self.client.post('/signup', json={
             'username': 'newemp',
             'password': 'newpassword123'
@@ -103,21 +103,22 @@ class TestAuthRoutes(BaseTestCase):
 
     def test_signup_invalid_json(self):
         response = self.client.post('/signup', data="not json", content_type='application/json')
-        self.assertEqual(response.status_code, 400, msg=response.get_json())
-        # The actual error message might vary based on Flask/Werkzeug version for malformed JSON
+        self.assertEqual(response.status_code, 400, msg=response.get_data(as_text=True))
+        
         json_response = response.get_json()
-        self.assertIn('error', json_response) 
-        self.assertTrue("Invalid JSON" in json_response['error'] or \
-                        "Failed to decode JSON" in json_response['error'] or \
-                        "not a valid JSON" in json_response['error'] or \
-                        "Request body is not valid JSON" in json_response['error']) # Added another common variant
+        self.assertIsNotNone(json_response, "Response should be JSON for a malformed JSON request to /signup.")
+        self.assertIn('error', json_response)
+        # Check against the updated error message from the route
+        self.assertEqual(json_response['error'], 'Invalid JSON payload or malformed JSON')
 
 
 class TestExpenseRoutes(BaseTestCase):
     def setUp(self): # Override BaseTestCase.setUp to add specific user for expense tests
-        super().setUp()
+        super().setUp() # This now calls the patched setUp from BaseTestCase
         self.employee_token = self.login_as('emp1', 'emp1pass')
-        self.employee_user = USERS_DB.get('emp1')
+        # Fetch user from mongomock via the model's method
+        self.employee_user = User.get_by_username('emp1')
+        self.assertIsNotNone(self.employee_user, "Employee 'emp1' should exist after setup.")
 
 
     def test_submit_expense_success(self):
@@ -181,30 +182,44 @@ class TestExpenseRoutes(BaseTestCase):
                                      headers={'Authorization': f'Bearer {self.employee_token}'},
                                      data=data, content_type='multipart/form-data')
         self.assertEqual(submit_response.status_code, 201, msg=submit_response.get_data(as_text=True))
+        # The route returns 'id' not '_id' in the JSON response for an expense
+        submitted_expense_id = submit_response.get_json()['expense']['id']
 
         response = self.client.get('/expenses', headers={'Authorization': f'Bearer {self.employee_token}'})
         self.assertEqual(response.status_code, 200)
-        expenses = response.get_json()
-        self.assertEqual(len(expenses), 1)
-        self.assertEqual(expenses[0]['amount'], 123.45)
-        self.assertEqual(expenses[0]['vendor'], 'My Vendor')
-        self.assertTrue(expenses[0]['receipt_url'].endswith(f'{SIMULATED_CLOUD_FOLDER}/my_receipt.pdf'))
+        expenses_json = response.get_json()
+        self.assertEqual(len(expenses_json), 1)
+        # Verify using the ID from the submission response
+        retrieved_expense = None
+        for exp in expenses_json:
+            # The GET /expenses route also returns 'id' not '_id'
+            if exp['id'] == submitted_expense_id:
+                retrieved_expense = exp
+                break
+        self.assertIsNotNone(retrieved_expense, "Submitted expense not found in GET response.")
+        self.assertEqual(retrieved_expense['amount'], 123.45)
+        self.assertEqual(retrieved_expense['vendor'], 'My Vendor')
+        self.assertTrue(retrieved_expense['receipt_url'].endswith(f'{SIMULATED_CLOUD_FOLDER}/my_receipt.pdf'))
 
     def test_get_expenses_unauthorized(self):
-        if not USERS_DB.get("emp2"):
+        # Create emp2 if it doesn't exist. User.save() now uses mongomock.
+        if not User.get_by_username("emp2"):
             Employee("emp2", "emp2pass").save()
         other_employee_token = self.login_as("emp2", "emp2pass")
 
-        data = {'amount': '10.00', 'date': '2024-01-18', 'vendor': 'Emp1 Vendor', 
-                'receipt': (BytesIO(b"receipt data"), 'emp1_receipt.png')}
-        submit_response = self.client.post('/expenses',
-                             headers={'Authorization': f'Bearer {self.employee_token}'},
-                             data=data, content_type='multipart/form-data')
-        self.assertEqual(submit_response.status_code, 201, msg=submit_response.get_data(as_text=True))
+        # emp1 submits an expense
+        data_emp1 = {'amount': '10.00', 'date': '2024-01-18', 'vendor': 'Emp1 Vendor', 
+                     'receipt': (BytesIO(b"receipt data for emp1"), 'emp1_receipt.png')}
+        submit_response_emp1 = self.client.post('/expenses',
+                                             headers={'Authorization': f'Bearer {self.employee_token}'},
+                                             data=data_emp1, content_type='multipart/form-data')
+        self.assertEqual(submit_response_emp1.status_code, 201, msg=submit_response_emp1.get_data(as_text=True))
         
-        response = self.client.get('/expenses', headers={'Authorization': f'Bearer {other_employee_token}'})
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.get_json()), 0)
+        # emp2 tries to get expenses, should only see their own (none in this case)
+        response_emp2_gets_expenses = self.client.get('/expenses', headers={'Authorization': f'Bearer {other_employee_token}'})
+        self.assertEqual(response_emp2_gets_expenses.status_code, 200)
+        self.assertEqual(len(response_emp2_gets_expenses.get_json()), 0, 
+                         "emp2 should not see emp1's expenses.")
 
 if __name__ == '__main__':
     unittest.main()
